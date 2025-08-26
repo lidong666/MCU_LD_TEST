@@ -102,7 +102,7 @@ typedef struct {
 CAN_RxMsg can_rx_buf[CAN_RX_BUF_SIZE];
 // 循环/队列形式存放接收到的 CAN 消息
 // 消息接收中断或 DMA 将写入此缓冲区
-// 用户在主循环或任务中根据 valid 标志读取处理
+// 用户在主循环或任务中根据 valid 标志读取处理  测试
 
 /* USER CODE END PV */
 
@@ -199,7 +199,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
                 // -------- MOTOR1 --------
                 can_buf[1] = can_buf[2] = rpm1_val < 0 ? 0xFF : 0x00; // 正反转标志
-                int16_t val1 = (int16_t)((abs(rpm1_val) * 5 + 1) / 2); // 转速换算为 CAN 数据（极对数 2.5）
+                //int16_t val1 = (int16_t)((abs(rpm1_val) * 5 + 1) / 2); // 转速换算为 CAN 数据（极对数 2.5）
+                int16_t val1 = (int16_t)(abs(rpm1_val) * 5); // 转速换算为 CAN 数据（极对数 5）
                 if (rpm1_val < 0) val1 = -val1;                        // 如果反转则取负
                 can_buf[3] = (val1 >> 8) & 0xFF;                      // 高字节
                 can_buf[4] = val1 & 0xFF;                             // 低字节
