@@ -506,12 +506,12 @@ void parse_and_print_can(const CAN_RxMsg* msg)
 
         // --------------------------
         // 将 eRPM 转换为实际 rpm（整数运算）
-        // MOTOR1 极对数 2.5，等价于 erpm / 2.5
+        // MOTOR1 极对数 5，等价于 erpm / 5
         // MOTOR2 极对数 5，等价于 erpm / 5
         // --------------------------
         uint16_t rpm;
         if (msg->id == MOTOR1_ID)
-            rpm = (uint16_t)((erpm * 2) / 5);  // 整数运算避免浮点
+            rpm = (uint16_t)(erpm / 5);  // 整数运算避免浮点
         else
             rpm = (uint16_t)(erpm / 5);
 
