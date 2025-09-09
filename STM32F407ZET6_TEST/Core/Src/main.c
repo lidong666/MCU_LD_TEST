@@ -197,22 +197,25 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                 uint8_t can_buf[5];
                 can_buf[0] = 0x02; // 数据帧标识（固定值）
 
-                // -------- MOTOR1 --------
-                can_buf[1] = can_buf[2] = rpm1_val < 0 ? 0xFF : 0x00; // 正反转标志
-                //int16_t val1 = (int16_t)((abs(rpm1_val) * 5 + 1) / 2); // 转速换算为 CAN 数据（极对数 2.5）
-                int16_t val1 = (int16_t)(abs(rpm1_val) * 5); // 转速换算为 CAN 数据（极对数 5）
-                if (rpm1_val < 0) val1 = -val1;                        // 如果反转则取负
-                can_buf[3] = (val1 >> 8) & 0xFF;                      // 高字节
-                can_buf[4] = val1 & 0xFF;                             // 低字节
-                can_send_msg(MOTOR1_ID, can_buf, 5);                 // 发送到 CAN 总线
+                // -------- MOTOR1 -------- (左轮)
+                can_buf[1] = can_buf[2] = rpm1_val < 0 ? 0xFF : 0x00;   // 正反转标志
+                int16_t val1 = (int16_t)(abs(rpm1_val) * 100);          // 转速换算为 CAN 数据
+                if (rpm1_val < 0) val1 = -val1;
+                can_buf[3] = (val1 >> 8) & 0xFF;
+                can_buf[4] = val1 & 0xFF;
+                can_send_msg(MOTOR1_ID, can_buf, 5);
+                can_send_msg(MOTOR1_ID, can_buf, 5);
 
-                // -------- MOTOR2 --------
+                // -------- MOTOR2 -------- (右轮，需要反向)
+                rpm2_val = -rpm2_val;                                   // 关键：反向处理
                 can_buf[1] = can_buf[2] = rpm2_val < 0 ? 0xFF : 0x00;
-                int16_t val2 = (int16_t)(abs(rpm2_val) * 5);          // 转速换算为 CAN 数据（极对数 5）
+                int16_t val2 = (int16_t)(abs(rpm2_val) * 100);
                 if (rpm2_val < 0) val2 = -val2;
                 can_buf[3] = (val2 >> 8) & 0xFF;
                 can_buf[4] = val2 & 0xFF;
                 can_send_msg(MOTOR2_ID, can_buf, 5);
+                can_send_msg(MOTOR2_ID, can_buf, 5);
+
 
                 // --------------------------
                 // 串口打印调试信息
@@ -323,9 +326,9 @@ int main(void)
 	  can_send_msg(MOTOR1_ID, hb, 1);
 	  can_send_msg(MOTOR2_ID, hb, 1);
 	  last_heartbeat_tick = now;
-	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);  // 翻转 PE4 灯
-	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_5);  // 翻转 PE5 灯
-	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_6);  // 翻转 PE6 灯
+//	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_4);  // 翻转 PE4 灯
+//	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_5);  // 翻转 PE5 灯
+//	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_6);  // 翻转 PE6 灯
 	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13); // 翻转 PC13 灯
 	}
 
@@ -506,14 +509,14 @@ void parse_and_print_can(const CAN_RxMsg* msg)
 
         // --------------------------
         // 将 eRPM 转换为实际 rpm（整数运算）
-        // MOTOR1 极对数 5，等价于 erpm / 5
+        // MOTOR1 极对数 2.5，等价于 erpm / 2.5
         // MOTOR2 极对数 5，等价于 erpm / 5
         // --------------------------
         uint16_t rpm;
         if (msg->id == MOTOR1_ID)
-            rpm = (uint16_t)(erpm / 5);  // 整数运算避免浮点
+            rpm = (uint16_t)((erpm * 2) / 5);  // 整数运算避免浮点
         else
-            rpm = (uint16_t)(erpm / 5);
+            rpm = (uint16_t)((erpm * 2) / 5);
 
         // --------------------------
         // 打印电机信息
